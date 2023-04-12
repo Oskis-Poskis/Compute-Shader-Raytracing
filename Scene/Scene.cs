@@ -24,7 +24,7 @@ namespace Tracer.SceneDesc
                 this.spheres[i] = new Sphere(center, radius, color);
             }
 
-            this.camera = new Camera(Vector3.Zero);
+            this.camera = new Camera(Vector3.UnitX * -5);
         }
 
         public static void prepareScene(Scene scene, ref ComputeShader raytracingShader)
