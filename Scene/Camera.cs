@@ -10,7 +10,8 @@ namespace Tracer.SceneDesc
         public Vector3 right = Vector3.UnitY;
         public Vector3 up = Vector3.UnitZ;
 
-        float sensitivity = 1;
+        float sensitivity = 0.5f;
+        float movementSpeed = 10;
 
         public float theta = 0;
         public float phi = 0;
@@ -40,6 +41,21 @@ namespace Tracer.SceneDesc
 
             this.right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitZ));
             this.up = Vector3.Normalize(Vector3.Cross(right, forward));
+        }
+
+        public void ForwardBackward(float direction, float delta)
+        {
+            this.position += movementSpeed * forward * direction * delta;
+        }
+
+        public void RightLeft(float direction, float delta)
+        {
+            this.position += movementSpeed * right * direction * delta;
+        }
+
+        public void UpDown(float direction, float delta)
+        {
+            this.position += movementSpeed * Vector3.UnitZ * direction * delta;
         }
     }
 }

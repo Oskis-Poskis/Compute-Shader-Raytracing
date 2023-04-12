@@ -108,6 +108,13 @@ namespace Tracer
             }
             else CursorState = CursorState.Normal;
 
+            if (IsKeyDown(Keys.W)) scene.camera.ForwardBackward(1, (float)args.Time);
+            if (IsKeyDown(Keys.S)) scene.camera.ForwardBackward(-1, (float)args.Time);
+            if (IsKeyDown(Keys.A)) scene.camera.RightLeft(-1, (float)args.Time);
+            if (IsKeyDown(Keys.D)) scene.camera.RightLeft(1, (float)args.Time);
+            if (IsKeyDown(Keys.E)) scene.camera.UpDown(1, (float)args.Time);
+            if (IsKeyDown(Keys.Q)) scene.camera.UpDown(-1, (float)args.Time);
+
             prepareScene(scene, ref RaytracingShader);
             renderScene(framebufferTexture, viewportSize);            
 
