@@ -9,7 +9,6 @@ namespace Tracer.SceneDesc
         public Vector3 forward = Vector3.UnitX;
         public Vector3 right = Vector3.UnitY;
         public Vector3 up = Vector3.UnitZ;
-        float sensitivity = 1;
 
         public float theta = 0;
         public float phi = 0;

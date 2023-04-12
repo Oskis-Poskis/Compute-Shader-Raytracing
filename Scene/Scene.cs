@@ -18,8 +18,8 @@ namespace Tracer.SceneDesc
             for (int i = 0; i < 32; i++)
             {
                 Vector3 center = new Vector3((float)RandomNumber(3, 10), (float)RandomNumber(-5, 5), (float)RandomNumber(-5, 5));
-                float radius = (float)RandomNumber(0.1, 2.0);
-                Vector3 color = new Vector3((float)RandomNumber(0, 1), (float)RandomNumber(0, 1), (float)RandomNumber(0, 1));
+                float radius = (float)RandomNumber(0.4, 1.5);
+                Vector3 color = new Vector3((float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1));
 
                 this.spheres[i] = new Sphere(center, radius, color);
             }
@@ -45,9 +45,7 @@ namespace Tracer.SceneDesc
 
             GL.ActiveTexture(TextureUnit.Texture1);
             GL.BindTexture(TextureTarget.Texture2D, sphereDataTexture);
-            byte[] byteArray = new byte[sphereData.Count * sizeof(float)];
-            System.Buffer.BlockCopy(sphereData.ToArray(), 0, byteArray, 0, byteArray.Length);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, sphereData.ToArray());
             GL.BindImageTexture(1, sphereDataTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.Rgba32f);
         }
 
@@ -81,9 +79,7 @@ namespace Tracer.SceneDesc
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
 
-            byte[] byteArray = new byte[sphereData.Count * sizeof(float)];
-            System.Buffer.BlockCopy(sphereData.ToArray(), 0, byteArray, 0, byteArray.Length);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, sphereData.ToArray());
         }
 
         private static void recordSphere(int i, Sphere _sphere)
