@@ -55,6 +55,10 @@ void main() {
     ray.direction = viewer.forward + horizontalCoefficient * viewer.right + verticalCoefficient * viewer.up;
 
     vec3 pixel = vec3(1.0);
+    vec3 unit_direction = normalize(ray.direction);
+    float t = 0.5 * (unit_direction.z + 1.0);
+    pixel = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
     for (int i = 0; i < 4; i++)
     {
         RenderState renderState = trace(ray);
@@ -65,7 +69,6 @@ void main() {
 
         ray.origin = renderState.position;
         ray.direction = reflect(ray.direction, renderState.normal);
-
     }
 
     imageStore(img_output, pixel_coords, vec4(pixel, 1.0));
@@ -105,7 +108,6 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
 
         if (t > tMin && t < tMax)
         {
-            
             renderState.position = ray.origin + t * ray.direction;
             renderState.normal = normalize(renderState.position - sphere.center);
             renderState.t = t;

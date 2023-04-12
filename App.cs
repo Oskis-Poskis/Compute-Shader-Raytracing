@@ -1,15 +1,18 @@
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
+
+using ImGuiNET;
 using System.Runtime.InteropServices;
 
 using Tracer.Stats;
 using Tracer.Common;
 using Tracer.SceneDesc;
+using Tracer.UserInterface;
 using static Tracer.Common.Framebuffers;
 using static Tracer.SceneDesc.Scene;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Tracer
 {
@@ -37,6 +40,7 @@ namespace Tracer
         }
 
         StatCounter stats = new StatCounter();
+        private ImGuiController ImGuiController;
         Vector2i viewportSize;
 
         Shader FBOshader;
@@ -91,6 +95,9 @@ namespace Tracer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBO);
             SetupFBO(ref framebufferTexture, viewportSize);
             CreateResourceMemory();
+
+            ImGuiController = new ImGuiController(viewportSize.X, viewportSize.Y);
+            UI.LoadTheme();
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -116,10 +123,22 @@ namespace Tracer
             if (IsKeyDown(Keys.Q)) scene.camera.UpDown(-1, (float)args.Time);
 
             prepareScene(scene, ref RaytracingShader);
-            renderScene(framebufferTexture, viewportSize);            
-
+            renderScene(framebufferTexture, viewportSize);
+            
+            GL.Viewport(0, 0, Size.X, Size.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            RenderFramebuffer(ref FBOshader, framebufferTexture);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, framebufferTexture);
+
+            ImGuiController.Update(this, (float)args.Time);
+            ImGui.DockSpaceOverViewport();
+            ImGui.Begin("Scene");
+            
+            viewportSize = new(Convert.ToInt32(ImGui.GetContentRegionAvail().X), Convert.ToInt32(ImGui.GetContentRegionAvail().Y));
+            ResizeFBO(viewportSize, ref framebufferTexture);
+            ImGui.Image((IntPtr)framebufferTexture, new(viewportSize.X, viewportSize.Y), new(0, 1), new(1, 0), new(1, 1, 1, 1), new(0));
+            ImGui.End();
+            ImGuiController.Render();
 
             stats.Count(args);
             Title = "FPS: " + Convert.ToInt32(stats.fps);
@@ -132,6 +151,8 @@ namespace Tracer
             base.OnResize(e);
 
             GL.Viewport(0, 0, e.Width, e.Height);
+            ImGuiController.WindowResized(e.Width, e.Height);
+            
             viewportSize = e.Size;
             ResizeFBO(viewportSize, ref framebufferTexture);
         }

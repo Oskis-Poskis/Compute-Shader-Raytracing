@@ -30,10 +30,7 @@ namespace Tracer.SceneDesc
 
             if (theta < 0) theta += 360;
             else if (theta > 360) theta -= 360;
-
             phi = Math.Clamp(phi, -89, 89);
-
-            Console.WriteLine("Theta: " + theta + " - " + "Phi: " + phi);
 
             this.forward = new Vector3(MathF.Cos((float)MathHelper.DegreesToRadians(theta)) * MathF.Cos((float)MathHelper.DegreesToRadians(phi)), 
                                        MathF.Sin((float)MathHelper.DegreesToRadians(theta)) * MathF.Cos((float)MathHelper.DegreesToRadians(phi)), 
@@ -45,17 +42,23 @@ namespace Tracer.SceneDesc
 
         public void ForwardBackward(float direction, float delta)
         {
-            this.position += movementSpeed * forward * direction * delta;
+            Vector3 targetPos = position;
+            targetPos += movementSpeed * forward * direction;
+            position = Vector3.Lerp(position, targetPos, delta * 2);
         }
 
         public void RightLeft(float direction, float delta)
         {
-            this.position += movementSpeed * right * direction * delta;
+            Vector3 targetPos = position;
+            targetPos += movementSpeed * right * direction;
+            position = Vector3.Lerp(position, targetPos, delta * 2);
         }
 
         public void UpDown(float direction, float delta)
         {
-            this.position += movementSpeed * Vector3.UnitZ * direction * delta;
+            Vector3 targetPos = position;
+            targetPos += movementSpeed * Vector3.UnitZ * direction;
+            position = Vector3.Lerp(position, targetPos, delta * 2);
         }
     }
 }
