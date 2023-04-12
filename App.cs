@@ -94,7 +94,8 @@ namespace Tracer
             FBO = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBO);
             SetupFBO(ref framebufferTexture, viewportSize);
-            CreateResourceMemory();
+            CreateResourceMemory(scene);
+            CreateNoiseTexture(viewportSize);
 
             ImGuiController = new ImGuiController(viewportSize.X, viewportSize.Y);
             UI.LoadTheme();
@@ -154,6 +155,7 @@ namespace Tracer
             ImGuiController.WindowResized(e.Width, e.Height);
             
             viewportSize = e.Size;
+            CreateNoiseTexture(viewportSize);
             ResizeFBO(viewportSize, ref framebufferTexture);
         }
     }

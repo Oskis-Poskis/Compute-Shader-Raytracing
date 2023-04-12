@@ -4,7 +4,7 @@
     {
         static void Main()
         {
-            using Window game = new Window(1920, 1080, "Window");
+            using Window game = new Window(1024, 1024, "Window");
             game.Run();
         }
     }

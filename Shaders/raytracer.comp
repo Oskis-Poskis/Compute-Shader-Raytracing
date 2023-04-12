@@ -5,6 +5,7 @@ struct Sphere
     vec3 center;
     float radius;
     vec3 color;
+    float roughness;
 };
 
 struct Camera
@@ -28,6 +29,7 @@ struct RenderState
     bool hit;
     vec3 position;
     vec3 normal;
+    float roughness;
 };
 
 // input/output
@@ -36,6 +38,7 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 
 uniform Camera viewer;
 layout(rgba32f, binding = 1) readonly uniform image2D spheres;
+layout(rgba32f, binding = 2) readonly uniform image2D noise;
 uniform float sphereCount;
 
 RenderState trace(Ray ray);
@@ -59,7 +62,7 @@ void main() {
     float t = 0.5 * (unit_direction.z + 1.0);
     pixel = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 
-    for (int i = 0; i < 4; i++)
+    for (int bounce = 0; bounce < 4; bounce++)
     {
         RenderState renderState = trace(ray);
 
@@ -68,7 +71,9 @@ void main() {
         pixel = pixel * renderState.color;
 
         ray.origin = renderState.position;
+        vec3 variation = imageLoad(noise, ivec2(pixel_coords.x + bounce * screen_size.x, pixel_coords.y)).xyz;
         ray.direction = reflect(ray.direction, renderState.normal);
+        ray.direction = normalize(ray.direction + variation * renderState.roughness);
     }
 
     imageStore(img_output, pixel_coords, vec4(pixel, 1.0));
@@ -112,6 +117,7 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
             renderState.normal = normalize(renderState.position - sphere.center);
             renderState.t = t;
             renderState.color = sphere.color;
+            renderState.roughness = sphere.roughness;
             renderState.hit = true;
             return renderState;
         }
@@ -130,6 +136,7 @@ Sphere unpackSphere(int index)
 
     attributeChunk = imageLoad(spheres, ivec2(1, index));
     sphere.color = attributeChunk.xyz;
+    sphere.roughness = attributeChunk.w;
 
     return sphere;
 }
