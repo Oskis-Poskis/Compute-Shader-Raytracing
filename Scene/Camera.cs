@@ -10,6 +10,8 @@ namespace Tracer.SceneDesc
         public Vector3 right = Vector3.UnitY;
         public Vector3 up = Vector3.UnitZ;
 
+        float sensitivity = 1;
+
         public float theta = 0;
         public float phi = 0;
 
@@ -18,14 +20,26 @@ namespace Tracer.SceneDesc
             position = startPosition;
         }
 
-        public void UpdateCamera(MouseState state)
+        public void UpdateCamera(MouseState state, Vector2i viewportSize)
         {
+            float deltaX = state.Delta.X;
+            float deltaY = state.Delta.Y;
+            theta -= deltaX * sensitivity;
+            phi -= deltaY * sensitivity;
+
+            if (theta < 0) theta += 360;
+            else if (theta > 360) theta -= 360;
+
+            phi = Math.Clamp(phi, -89, 89);
+
+            Console.WriteLine("Theta: " + theta + " - " + "Phi: " + phi);
+
             this.forward = new Vector3(MathF.Cos((float)MathHelper.DegreesToRadians(theta)) * MathF.Cos((float)MathHelper.DegreesToRadians(phi)), 
                                        MathF.Sin((float)MathHelper.DegreesToRadians(theta)) * MathF.Cos((float)MathHelper.DegreesToRadians(phi)), 
-                                       MathF.Sin((float)MathHelper.DegreesToRadians(theta)));
+                                       MathF.Sin((float)MathHelper.DegreesToRadians(phi)));
 
-            this.right = Vector3.Cross(forward, Vector3.UnitZ);
-            this.up = Vector3.Cross(right, forward);
+            this.right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitZ));
+            this.up = Vector3.Normalize(Vector3.Cross(right, forward));
         }
     }
 }

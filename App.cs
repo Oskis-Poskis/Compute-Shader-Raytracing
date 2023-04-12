@@ -9,6 +9,7 @@ using Tracer.Common;
 using Tracer.SceneDesc;
 using static Tracer.Common.Framebuffers;
 using static Tracer.SceneDesc.Scene;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Tracer
 {
@@ -81,6 +82,8 @@ namespace Tracer
             IsVisible = true;
             GL.ClearColor(new Color4(0.0f, 0.0f, 0.0f, 0.0f));
 
+            VSync = VSyncMode.Off;
+
             GL.DebugMessageCallback(DebugMessageDelegate, IntPtr.Zero);
             GL.Enable(EnableCap.DebugOutput);
 
@@ -98,9 +101,13 @@ namespace Tracer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBO);
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
-            RaytracingShader.Use();
+            if (IsMouseButtonDown(MouseButton.Button2))
+            {
+                CursorState = CursorState.Grabbed;
+                scene.camera.UpdateCamera(MouseState, viewportSize);
+            }
+            else CursorState = CursorState.Normal;
 
-            scene.camera.UpdateCamera(MouseState);
             prepareScene(scene, ref RaytracingShader);
             renderScene(framebufferTexture, viewportSize);            
 
@@ -111,8 +118,6 @@ namespace Tracer
             Title = "FPS: " + Convert.ToInt32(stats.fps);
 
             SwapBuffers();
-            OpenTK.Graphics.OpenGL4.ErrorCode error = GL.GetError();
-            if (error != OpenTK.Graphics.OpenGL4.ErrorCode.NoError) Console.WriteLine("OpenGL Error: " + error.ToString());
         }
 
         protected override void OnResize(ResizeEventArgs e)
