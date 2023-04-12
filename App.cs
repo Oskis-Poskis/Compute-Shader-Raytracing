@@ -87,6 +87,7 @@ namespace Tracer
             FBO = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBO);
             SetupFBO(ref framebufferTexture, viewportSize);
+            CreateResourceMemory();
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -99,14 +100,9 @@ namespace Tracer
 
             RaytracingShader.Use();
 
+            scene.camera.UpdateCamera(MouseState);
             prepareScene(scene, ref RaytracingShader);
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindImageTexture(0, framebufferTexture, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
-
-            GL.DispatchCompute(viewportSize.X, viewportSize.Y, 1);
-            GL.MemoryBarrier(MemoryBarrierFlags.ShaderImageAccessBarrierBit);
-            GL.BindImageTexture(0, 0, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
+            renderScene(framebufferTexture, viewportSize);            
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             RenderFramebuffer(ref FBOshader, framebufferTexture);
