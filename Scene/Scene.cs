@@ -47,7 +47,7 @@ namespace Tracer.SceneDesc
             GL.BindTexture(TextureTarget.Texture2D, sphereDataTexture);
             byte[] byteArray = new byte[sphereData.Count * sizeof(float)];
             System.Buffer.BlockCopy(sphereData.ToArray(), 0, byteArray, 0, byteArray.Length);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 1024, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
             GL.BindImageTexture(1, sphereDataTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.Rgba32f);
         }
 
@@ -64,7 +64,7 @@ namespace Tracer.SceneDesc
         public static void CreateResourceMemory()
         {
             // (cx cy cz r) (r g b _)
-            for (int i = 0; i < 1024; i++)
+            for (int i = 0; i < 32; i++)
             {
                 for (int attribute = 0; attribute < 8; attribute++)
                 {
@@ -83,7 +83,7 @@ namespace Tracer.SceneDesc
 
             byte[] byteArray = new byte[sphereData.Count * sizeof(float)];
             System.Buffer.BlockCopy(sphereData.ToArray(), 0, byteArray, 0, byteArray.Length);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 1024, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, 2, 32, 0, PixelFormat.Rgba, PixelType.Float, byteArray);
         }
 
         private static void recordSphere(int i, Sphere _sphere)
