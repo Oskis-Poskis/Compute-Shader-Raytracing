@@ -8,6 +8,13 @@ struct Sphere
     float roughness;
 };
 
+struct Light
+{
+    vec3 position;
+    vec3 color;
+    float strength;
+};
+
 struct Camera
 {
     vec3 position;
@@ -26,6 +33,7 @@ struct RenderState
 {
     float t;
     vec3 color;
+    vec3 emissive;
     bool hit;
     vec3 position;
     vec3 normal;
@@ -33,23 +41,41 @@ struct RenderState
 };
 
 // input/output
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
+uniform int numBounces = 1;
+uniform vec3 lightPos = vec3(0);
 uniform Camera viewer;
 layout(rgba32f, binding = 1) readonly uniform image2D spheres;
-layout(rgba32f, binding = 2) readonly uniform image2D noise;
 uniform float sphereCount;
-
-RenderState trace(Ray ray);
 
 Sphere unpackSphere(int index);
 RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState renderState);
+RenderState trace(Ray ray);
 
-void main() {
+vec3 light_fragment(RenderState renderState);
+float distanceTo(Ray ray, Sphere sphere);
 
+float rand2(vec2 p);
+float map(float value, float fromLow, float fromHigh, float toLow, float toHigh);
+vec3 RandomHemisphereDirection(int bounce, ivec2 pixel_coords);
+
+vec3 ACESFilm(vec3 x)
+{
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 5.0);
+}
+
+void main()
+{
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
     ivec2 screen_size = imageSize(img_output);
+
     float horizontalCoefficient = ((float(pixel_coords.x) * 2 - screen_size.x) / screen_size.x);
     float verticalCoefficient = ((float(pixel_coords.y) * 2 - screen_size.y) / screen_size.x);
 
@@ -57,26 +83,44 @@ void main() {
     ray.origin = viewer.position;
     ray.direction = viewer.forward + horizontalCoefficient * viewer.right + verticalCoefficient * viewer.up;
 
-    vec3 pixel = vec3(1.0);
-    vec3 unit_direction = normalize(ray.direction);
-    float t = 0.5 * (unit_direction.z + 1.0);
-    pixel = (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-
-    for (int bounce = 0; bounce < 4; bounce++)
+    vec3 pixel = vec3(0);
+    RenderState renderState;
+    for (int bounce = 0; bounce < numBounces; bounce++)
     {
-        RenderState renderState = trace(ray);
-
+        renderState = trace(ray);
         if (!renderState.hit) break;
-
-        pixel = pixel * renderState.color;
-
+        pixel += renderState.color * light_fragment(renderState) + renderState.emissive;
         ray.origin = renderState.position;
-        vec3 variation = imageLoad(noise, ivec2(pixel_coords.x + bounce * screen_size.x, pixel_coords.y)).xyz;
-        ray.direction = reflect(ray.direction, renderState.normal);
-        ray.direction = normalize(ray.direction + variation * renderState.roughness);
+        // ray.direction = reflect(ray.direction, renderState.normal);
+        ray.direction = normalize(ray.direction + RandomHemisphereDirection(bounce, pixel_coords) * renderState.roughness);
     }
+    
+    imageStore(img_output, pixel_coords, vec4(ACESFilm(pixel), 1.0));
+}
 
-    imageStore(img_output, pixel_coords, vec4(pixel, 1.0));
+float rand2(vec2 p)
+{
+	vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+float map(float value, float fromLow, float fromHigh, float toLow, float toHigh)
+{
+    return toLow + (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow);
+}
+
+vec3 RandomHemisphereDirection(int bounce, ivec2 pixel_coords)
+{
+    vec3 variation = vec3(0);
+    float radius = rand2(pixel_coords + vec2(bounce));
+    float theta = map(rand2(pixel_coords +  vec2(bounce * 2)), 0, 1, 0, 2 * 3.14);
+    float phi = map(rand2(pixel_coords + vec2(bounce) * 3), 0, 1, 0, 3.14);
+    variation.x = radius * cos(theta) * cos(phi);
+    variation.y = radius * sin(theta) * cos(phi);
+    variation.z = radius * cos(phi);
+
+    return variation;
 }
 
 RenderState trace(Ray ray)
@@ -84,11 +128,11 @@ RenderState trace(Ray ray)
     float nearestHit = 9999999;
     RenderState renderState;
     renderState.hit = false;
+    renderState.color = vec3(0.0);
 
     for (int i = 0; i < sphereCount; i++)
     {
         RenderState newRenderState = hit(ray, unpackSphere(i), 0.001, nearestHit, renderState);
-
         if (newRenderState.hit)
         {
             nearestHit = newRenderState.t;
@@ -107,7 +151,7 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
     float c = dot(co, co) - sphere.radius * sphere.radius;
     float discriminant = b * b - (4 * a * c);
 
-    if (discriminant > 0)
+    if (discriminant >= 0)
     {
         float t = (-b - sqrt(discriminant)) / (2 * a);
 
@@ -118,6 +162,7 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
             renderState.t = t;
             renderState.color = sphere.color;
             renderState.roughness = sphere.roughness;
+            renderState.emissive = vec3(0);
             renderState.hit = true;
             return renderState;
         }
@@ -125,6 +170,64 @@ RenderState hit(Ray ray, Sphere sphere, float tMin, float tMax, RenderState rend
 
     renderState.hit = false;
     return renderState;
+}
+
+vec3 light_fragment(RenderState renderState)
+{
+    vec3 color = vec3(0.2);
+    bool blocked = false;
+
+    Light light;
+    light.color = vec3(1);
+    light.position = lightPos;
+    light.strength = 10;
+
+    vec3 fragLight = light.position - renderState.position;
+    float distanceToLight = length(fragLight);
+    fragLight = normalize(fragLight);
+    vec3 fragViewer = normalize(viewer.position - renderState.position);
+    vec3 halfway = normalize(fragViewer + fragLight);
+
+    Ray ray;
+    ray.origin = renderState.position;
+    ray.direction = fragLight;
+
+    for (int i = 0; i < sphereCount; i++)
+    {
+        float trialDist = distanceTo(ray, unpackSphere(i));
+        if (trialDist < distanceToLight) blocked = true;
+    }
+
+    if (!blocked)
+    {
+        color += light.color * max(0.0, dot(renderState.normal, fragLight)) * light.strength / (distanceToLight * distanceToLight);
+        // color += light.color * pow(max(0.0, dot(renderState.normal, halfway)), 64) * light.strength / (distanceToLight * distanceToLight);
+    }
+
+    return color;
+}
+
+float distanceTo(Ray ray, Sphere sphere)
+{
+    vec3 co = ray.origin - sphere.center;
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, co);
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+    float discriminant = b * b - (4 * a * c);
+    
+    if (discriminant > 0.0) {
+
+        float t = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (t < 0.0001)
+        {
+            return 9999;
+        }
+
+        return length(t * ray.direction);
+    }
+
+    return 99999;
 }
 
 Sphere unpackSphere(int index)

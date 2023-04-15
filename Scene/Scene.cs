@@ -19,10 +19,10 @@ namespace Tracer.SceneDesc
             this.spheres = new Sphere[32];
             for (int i = 0; i < 32; i++)
             {
-                Vector3 center = new Vector3((float)RandomNumber(3, 10), (float)RandomNumber(-5, 5), (float)RandomNumber(-5, 5));
+                Vector3 center = new Vector3((float)RandomNumber(-5, 5), (float)RandomNumber(-5, 5), (float)RandomNumber(-5, 5));
                 float radius = (float)RandomNumber(0.4, 1.5);
-                Vector3 color = new Vector3((float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1));
-                float roughness = (float)RandomNumber(0.1, 0.9);
+                Vector3 color = new(1); // new Vector3((float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1), (float)RandomNumber(0.3, 1));
+                float roughness = 0.5f;
 
                 this.spheres[i] = new Sphere(center, radius, color, roughness);
             }
@@ -42,8 +42,6 @@ namespace Tracer.SceneDesc
 
             GL.ActiveTexture(TextureUnit.Texture1);
             GL.BindImageTexture(1, sphereDataTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.Rgba32f);
-            GL.ActiveTexture(TextureUnit.Texture2);
-            GL.BindImageTexture(2, noiseTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.Rgba32f);
         }
 
         public static void renderScene(int framebufferTexture, Vector2i viewportSize)
@@ -51,7 +49,10 @@ namespace Tracer.SceneDesc
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindImageTexture(0, framebufferTexture, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
 
-            GL.DispatchCompute(viewportSize.X, viewportSize.Y, 1);
+
+            GL.DispatchCompute(Convert.ToInt32(MathHelper.Ceiling((float)viewportSize.X / 8)), Convert.ToInt32(MathHelper.Ceiling((float)viewportSize.Y / 8)), 1);
+            
+            
             GL.MemoryBarrier(MemoryBarrierFlags.ShaderImageAccessBarrierBit);
             GL.BindImageTexture(0, 0, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
         }
@@ -119,7 +120,7 @@ namespace Tracer.SceneDesc
             sphereData[8 * i + 4] = _sphere.color[0];
             sphereData[8 * i + 5] = _sphere.color[1];
             sphereData[8 * i + 6] = _sphere.color[2];
-            sphereData[8 * i + 7] = _sphere.roughness;  
+            sphereData[8 * i + 7] = _sphere.roughness;
         }
 
         private static double RandomNumber(double minimum, double maximum)

@@ -45,8 +45,11 @@ namespace Tracer
 
         Shader FBOshader;
         ComputeShader RaytracingShader;
+        int numBounces = 1;
         int framebufferTexture;
         int FBO;
+
+        System.Numerics.Vector3 lightPos = new(0);
 
         Scene scene = new();
 
@@ -95,7 +98,7 @@ namespace Tracer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBO);
             SetupFBO(ref framebufferTexture, viewportSize);
             CreateResourceMemory(scene);
-            CreateNoiseTexture(viewportSize);
+            // CreateNoiseTexture(viewportSize);
 
             ImGuiController = new ImGuiController(viewportSize.X, viewportSize.Y);
             UI.LoadTheme();
@@ -133,12 +136,18 @@ namespace Tracer
 
             ImGuiController.Update(this, (float)args.Time);
             ImGui.DockSpaceOverViewport();
+
             ImGui.Begin("Scene");
-            
             viewportSize = new(Convert.ToInt32(ImGui.GetContentRegionAvail().X), Convert.ToInt32(ImGui.GetContentRegionAvail().Y));
             ResizeFBO(viewportSize, ref framebufferTexture);
             ImGui.Image((IntPtr)framebufferTexture, new(viewportSize.X, viewportSize.Y), new(0, 1), new(1, 0), new(1, 1, 1, 1), new(0));
             ImGui.End();
+
+            ImGui.Begin("Settings");
+            if (ImGui.SliderInt("Bounces", ref numBounces, 1, 64)) RaytracingShader.SetInt("numBounces", numBounces);
+            if (ImGui.SliderFloat3("LightPos", ref lightPos, -10, 10)) RaytracingShader.SetVector3("lightPos", new(lightPos.X, lightPos.Y, lightPos.Z));
+            ImGui.End();
+
             ImGuiController.Render();
 
             stats.Count(args);
@@ -155,8 +164,21 @@ namespace Tracer
             ImGuiController.WindowResized(e.Width, e.Height);
             
             viewportSize = e.Size;
-            CreateNoiseTexture(viewportSize);
             ResizeFBO(viewportSize, ref framebufferTexture);
+        }
+
+        protected override void OnTextInput(TextInputEventArgs e)
+        {
+            base.OnTextInput(e);
+
+            ImGuiController.PressChar((char)e.Unicode);
+        }
+
+        protected override void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnMouseWheel(e);
+
+            ImGuiController.MouseScroll(e.Offset);
         }
     }
 }
